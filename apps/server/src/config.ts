@@ -70,6 +70,15 @@ export const ConfigSchema = z
     ),
     COOKIE_SECURE: EnvBooleanSchema.default(true),
     TRUST_CLOUDFLARE: EnvBooleanSchema.default(false),
+    MCP_ALLOWED_ORIGINS: z
+      .preprocess(emptyToUndefined, z.string().optional())
+      .transform((value) => {
+        if (value === undefined) return [];
+        return value
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter((origin) => origin.length > 0);
+      }),
   })
   .superRefine((config, ctx) => {
     if (Buffer.from(config.OMNIS_SECRET_KEY, 'base64').length !== 32) {

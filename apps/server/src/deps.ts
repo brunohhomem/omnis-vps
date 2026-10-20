@@ -23,7 +23,6 @@ export type AppDeps = {
   adapters: Adapters;
   audit: AuditService;
   auth: AuthService;
-  // T008: mcp · ...
 };
 
 export async function createDeps(config: Config): Promise<AppDeps> {

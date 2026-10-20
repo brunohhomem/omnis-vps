@@ -25,6 +25,7 @@ describe('loadConfig', () => {
     expect(config.SESSION_TTL_HOURS).toBe(168);
     expect(config.COOKIE_SECURE).toBe(true);
     expect(config.TRUST_CLOUDFLARE).toBe(false);
+    expect(config.MCP_ALLOWED_ORIGINS).toEqual([]);
   });
 
   it('splits DISK_MOUNTS and drops empty entries', () => {

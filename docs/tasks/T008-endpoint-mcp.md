@@ -104,10 +104,10 @@ Descrições escritas para a IA, em inglês (melhor desempenho de seleção de t
 
 ## Critérios de aceite
 
-- [ ] Tools filtradas pelo escopo do token na listagem.
-- [ ] Registro explícito com as 4 validações no boot.
-- [ ] Nenhuma lógica de negócio dentro dos arquivos de tools.
-- [ ] Ações destrutivas sempre auditadas e com `confirm`.
+- [x] Tools filtradas pelo escopo do token na listagem.
+- [x] Registro explícito com as 4 validações no boot.
+- [x] Nenhuma lógica de negócio dentro dos arquivos de tools.
+- [x] Ações destrutivas sempre auditadas e com `confirm`.
 
 ## Fora de escopo
 
@@ -115,7 +115,21 @@ OAuth para o conector do claude.ai, sessões MCP/SSE, tools de escrita reais (v�
 
 ## Registro de implementação
 
-- Versão do SDK MCP:
+- Versão do SDK MCP: `@modelcontextprotocol/sdk@1.32.1`
 - Teste com Claude Code (resultado):
+  - `claude mcp add --scope user --transport http omnis http://127.0.0.1:4010/mcp` registrou o server no config do usuário (`C:\Users\bruno\.claude.json`). O escopo foi `user` em vez do default `local`, para o Bearer não cair num arquivo do repositório.
+  - `claude -p` pedindo `system_info` parou com `401 OAuth access token has been revoked`. O CLI está instalado, mas a sessão da Anthropic não autentica, então a chamada da tool pelo Claude Code não foi observada.
+  - No server ligado, o token `read` criado na T007 respondeu `200` em `GET /api/system/info`. O cliente do SDK, nos testes, listou as 3 tools e chamou `system_info`.
 - Desvios da spec e motivo:
+  - O módulo de auth ainda não tem tools. O registro explícito lista só `createSystemTools` e `createAuditTools`.
+  - A tool destrutiva de teste entra por `buildApp(deps, { tools })` e não faz parte do registro de produção.
+  - `GET` e `DELETE /mcp` respondem `405` com `Allow: POST`.
+  - Resultado acima de 100 KB é cortado e ganha o aviso `[truncated: result exceeded 100KB]`.
+  - `Origin` ausente passa. `Origin` presente fora de `MCP_ALLOWED_ORIGINS` (default vazio) responde `403`.
+  - A promise de `app.register` é consumida. O Fastify também rejeita `ready()`/`listen()`, e deixar a primeira solta derrubava o teste de boot com unhandled rejection.
 - Problemas encontrados:
+  - No Zod 4, `shape.confirm` não expõe `safeParse` no tipo. A checagem faz cast para `z.ZodType`.
+  - O handler da tool, ao ser guardado em `ToolDef[]`, perde o tipo do input. `audit_list` valida de novo com `AuditListInputSchema` antes de chamar o service.
+  - No Windows, o header do `claude mcp add` precisa ir entre aspas, senão o CLI lê só `Bearer`.
+  - `typecheck`, `lint` e `test` passaram (59 testes no server, 14 no shared).
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.
