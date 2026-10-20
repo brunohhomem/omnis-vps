@@ -22,9 +22,9 @@ Criar o esqueleto do monorepo com npm workspaces e **provar** que `@omnis/shared
      - `build`: `npm run build -w @omnis/web && npm run build -w @omnis/server`
      - `typecheck`: `npm run typecheck --workspaces --if-present`
      - `test`: `npm run test --workspaces --if-present`
-     - `lint`: `biome check .`
-     - `format`: `biome format --write .`
-   - devDependencies: `typescript`, `@biomejs/biome`, `concurrently`, `vitest`
+     - `lint`: `eslint . && prettier --check .`
+     - `format`: `prettier --write .`
+   - devDependencies: `typescript`, `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-config-prettier`, `prettier`, `concurrently`, `vitest`
 2. `.nvmrc` com `24`.
 3. `tsconfig.base.json`:
    ```json
@@ -43,8 +43,10 @@ Criar o esqueleto do monorepo com npm workspaces e **provar** que `@omnis/shared
      }
    }
    ```
-4. `biome.json`: aspas simples, indentação de 2 espaços, ignorar `dist`, `out`, `.next`, `node_modules`, `**/drizzle/meta`.
-5. `.gitignore`: `node_modules`, `dist`, `out`, `.next`, `*.db`, `*.db-*`, `data/`, `.env`, `.env.*`, `!.env.example`.
+4. ESLint e Prettier na raiz: aspas simples, indentação de 2 espaços, ignorar `dist`, `out`, `.next`, `node_modules`, `**/drizzle/meta` e `**/*.md`.
+   - `eslint.config.js`: `typescript-eslint` e `eslint-config-prettier`
+   - `.prettierrc.json` e `.prettierignore`
+5. `.gitignore`: `node_modules`, `dist`, `out`, `.next`, `next-env.d.ts`, `*.db`, `*.db-*`, `data/`, `.env`, `.env.*`, `!.env.example`.
 6. `README.md` curto: pré-requisitos, `npm install`, `npm run dev`, link para `docs/`.
 
 ### 2. Escolha da versão do zod (antes de instalar qualquer coisa)
@@ -86,13 +88,13 @@ Criar o esqueleto do monorepo com npm workspaces e **provar** que `@omnis/shared
    - devDependencies: `tsx`, `tsdown`, `@types/node`
    - scripts: `dev` (`tsx watch src/index.ts`), `build` (`tsdown`), `start` (`node dist/index.js`), `typecheck` (`tsc --noEmit`), `test` (`vitest run --passWithNoTests`)
 2. `tsconfig.json` estendendo a base, com `"types": ["node"]`.
-3. `tsdown.config.ts`: entry `src/index.ts`, format `esm`, platform `node`, target `node22`, `noExternal: ['@omnis/shared']`, demais dependências externas.
+3. `tsdown.config.ts`: entry `src/index.ts`, format `esm`, platform `node`, target `node22`, `fixedExtension: false`, `noExternal: ['@omnis/shared']`, demais dependências externas.
 4. `src/index.ts`: importa `SmokeSchema` e `SHARED_SMOKE`, faz `SmokeSchema.parse({ message: SHARED_SMOKE })` e imprime o resultado.
 
 ### 5. `apps/web` (esqueleto mínimo, UI só na T021)
 
-1. Next.js com App Router e TypeScript em `apps/web/src/app`, **sem ESLint** (usamos Biome) e **sem Tailwind por enquanto**.
-2. `package.json`: `"name": "@omnis/web"`, `private`, dependency `"@omnis/shared": "*"`, scripts `dev` (`next dev -p 3000`), `build` (`next build`), `typecheck` (`tsc --noEmit`).
+1. Next.js com App Router e TypeScript em `apps/web/src/app`, **sem Tailwind por enquanto**. Lint e formatação ficam na raiz (ESLint e Prettier).
+2. `package.json`: `"name": "@omnis/web"`, `private`, dependencies `"@omnis/shared": "*"` e `axios`, scripts `dev` (`next dev -p 3000`), `build` (`next build`), `typecheck` (`tsc --noEmit`).
 3. `next.config.ts`:
    ```ts
    const nextConfig = {
@@ -100,6 +102,7 @@ Criar o esqueleto do monorepo com npm workspaces e **provar** que `@omnis/shared
      trailingSlash: true,
      images: { unoptimized: true },
      transpilePackages: ['@omnis/shared'],
+     agentRules: false,
    };
    export default nextConfig;
    ```
@@ -121,7 +124,7 @@ alwaysApply: true
 - A fonte da verdade são os ADRs em docs/adr/. Não contrarie um ADR. Em caso de conflito, pare e pergunte.
 - Implemente somente o escopo da task atual. Nada de "melhorias" fora do escopo.
 - Não adicione dependências não previstas na task sem justificar no Registro de implementação.
-- Lint e formatação: Biome. Nada de ESLint ou Prettier.
+- Lint: ESLint. Formatação: Prettier.
 
 ## Monorepo
 - npm workspaces. Dependência local sempre com versão "*". Nunca use "workspace:*".
@@ -149,7 +152,7 @@ alwaysApply: true
 
 ## apps/web
 - Next.js em static export. Proibido: API routes/route handlers, server actions, middleware.ts, busca de dados em server components, next/image otimizado.
-- Todo dado vem da API do server, via fetch no cliente.
+- Todo dado vem da API do server, via axios no cliente. Proibido `fetch`.
 ```
 
 ## Arquivos esperados
@@ -158,7 +161,9 @@ alwaysApply: true
 .cursor/rules/omnis.mdc
 .gitignore
 .nvmrc
-biome.json
+eslint.config.js
+.prettierrc.json
+.prettierignore
 package.json
 package-lock.json
 README.md
@@ -180,9 +185,9 @@ apps/web/{package.json,tsconfig.json,next.config.ts,src/app/layout.tsx,src/app/p
 
 ## Critérios de aceite
 
-- [ ] Todos os itens da verificação passam.
-- [ ] Nenhum `workspace:*`, nenhum path alias entre pacotes.
-- [ ] Versão do zod registrada com a justificativa de compatibilidade.
+- [x] Todos os itens da verificação passam.
+- [x] Nenhum `workspace:*`, nenhum path alias entre pacotes.
+- [x] Versão do zod registrada com a justificativa de compatibilidade.
 
 ## Fora de escopo
 
@@ -192,7 +197,28 @@ Fastify, banco, Tailwind, shadcn, qualquer funcionalidade do painel.
 
 > Preenchido pelo Cursor ao final.
 
-- Versões instaladas (node, typescript, zod, next, tsdown, biome):
+- Versões instaladas (node, typescript, zod, next, tsdown, eslint, prettier, axios):
+  - Node local `v22.20.0` (`.nvmrc` pede 24; `engines` aceita `>=22`)
+  - typescript `6.0.3`, zod `4.6.7`, next `16.4.2`, tsdown `0.23.1`
+  - eslint `10.13.0`, `@eslint/js` `10.0.1`, typescript-eslint `8.72.0`, eslint-config-prettier `10.1.8`, prettier `3.9.10`
+  - axios `1.20.0`
 - Compatibilidade zod × SDK MCP × fastify-type-provider-zod:
+  - `@modelcontextprotocol/sdk@1.32.1`: peer e dependency `zod@^3.25 || ^4.0`
+  - `fastify-type-provider-zod@7.0.0`: peer `zod@>=4.1.5`
+  - Maior major compatível com os dois: **zod 4**. Faixa: `>=4.1.5 <5`. Versão instalada: **4.6.7** (a mais recente nessa faixa). O SDK e o type provider ainda não foram instalados; essas são as versões previstas para T003/T008.
 - Desvios da spec e motivo:
+  - ESLint + Prettier no lugar de Biome, e axios no lugar de fetch, por decisão posterior à spec.
+  - TypeScript `6.0.3` (`~6.0.3`): `typescript-eslint@8.72.0` só aceita `typescript@>=4.8.4 <6.1.0`. A 7.0.2 não instala junto.
+  - `@types/node@22` (não a 26): o target do bundle é `node22`.
+  - `next`, `react`, `react-dom` e os `@types` correspondentes: necessários para o App Router. `zod` também no web, pelo ADR-002 M5. `"type": "module"` no web, pelo ADR-002 M2.
+  - `packages/shared`: `"types": []` e `noEmit`, para o typecheck não herdar `@types/node` hoisted.
+  - `fixedExtension: false` no tsdown: com `platform: 'node'` o default é `.mjs`. O pacote é `"type": "module"`, então a saída fica `dist/index.js`.
+  - `agentRules: false` no Next: o `next dev` 16 gera `apps/web/AGENTS.md` se a opção ficar ligada.
+  - `next-env.d.ts` no `.gitignore`: o Next grava imports de `.next/types`, que não existem antes do primeiro dev/build.
+  - Prettier ignora `**/*.md` para não reformatar a documentação já escrita.
+  - A página de smoke não chama a API. O axios está declarado no web para as próximas tasks.
 - Problemas encontrados:
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.
+  - O postinstall do esbuild foi bloqueado pelo npm; o binário `@esbuild/win32-x64` já estava presente e tsx/tsdown funcionaram.
+  - Único `node_modules` aninhado: `node_modules/next/node_modules/postcss`. Não há `node_modules` em `apps/` nem em `packages/`.
+  - tsdown avisa que `noExternal` está depreciado (`deps.alwaysBundle`). O build conclui e o shared fica embutido; `zod` continua externo. A opção foi mantida porque o ADR-002 pede `noExternal`.

@@ -1,0 +1,7 @@
+dist
+out
+.next
+node_modules
+**/drizzle/meta
+package-lock.json
+**/*.md

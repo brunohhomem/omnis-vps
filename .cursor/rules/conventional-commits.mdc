@@ -1,0 +1,28 @@
+---
+description: Mensagens de commit no padrão Conventional Commits
+alwaysApply: true
+---
+
+# Conventional Commits
+
+Toda mensagem de commit segue [Conventional Commits](https://www.conventionalcommits.org). A mensagem é em inglês, como o histórico do repositório.
+
+```
+<type>(<scope>): <description>
+
+[corpo opcional]
+```
+
+- `type`: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+- `scope`: opcional e curto (`server`, `web`, `shared`, `docs`)
+- `description`: imperativo, minúscula, sem ponto final
+- Corpo: o porquê, só quando a primeira linha não basta
+- Um commit por mudança
+
+```
+feat(shared): add smoke schema consumed by server and web
+
+fix(server): keep zod external in the production bundle
+
+docs: record zod 4 compatibility for mcp and fastify
+```

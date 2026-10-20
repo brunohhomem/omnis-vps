@@ -112,7 +112,7 @@ Next.js com `output: 'export'`, servido pelo Fastify via `@fastify/static`. UI c
 
 Consequências:
 
-- Todo dado vem da API do Fastify, via fetch no cliente.
+- Todo dado vem da API do Fastify, via axios no cliente. Proibido `fetch`.
 - A autenticação é um cookie `httpOnly` validado pelo Fastify. A proteção de páginas acontece no cliente, e a segurança real fica na API.
 - Rotas dinâmicas usam parâmetros resolvidos no cliente (ex.: `/apps?name=x`) ou `generateStaticParams` com conjunto conhecido.
 

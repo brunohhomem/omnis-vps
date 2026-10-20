@@ -1,0 +1,40 @@
+---
+description: Regras de arquitetura do Omnis
+alwaysApply: true
+---
+
+# Omnis — regras obrigatórias
+
+## Geral
+- A fonte da verdade são os ADRs em docs/adr/. Não contrarie um ADR. Em caso de conflito, pare e pergunte.
+- Implemente somente o escopo da task atual. Nada de "melhorias" fora do escopo.
+- Não adicione dependências não previstas na task sem justificar no Registro de implementação.
+- Lint: ESLint. Formatação: Prettier.
+
+## Monorepo
+- npm workspaces. Dependência local sempre com versão "*". Nunca use "workspace:*".
+- Imports entre pacotes somente pelo nome do pacote (@omnis/shared).
+- Proibido path alias entre pacotes e import relativo que atravesse pacotes.
+- Alias "@/" permitido somente dentro de apps/web.
+- zod: sempre `import { z } from 'zod'`. Versão única definida na raiz (overrides).
+
+## packages/shared
+- Contém somente schemas zod, tipos, constantes e funções puras.
+- Proibido importar APIs do Node ou do browser, e qualquer dependência além de zod.
+
+## apps/server
+- Cada módulo fica em src/modules/<modulo>/ com: index.ts, <modulo>.service.ts, <modulo>.routes.ts, <modulo>.tools.ts.
+- Services não importam fastify nem o SDK MCP. Recebem dependências pelo objeto deps.
+- Routes e tools são adaptadores finos: validam, checam escopo, chamam o service, auditam.
+- Acesso ao SO (/proc, PM2, Docker, journald, comandos) somente via src/infra/.
+- Proibido child_process.exec e shell: true. Comandos externos só via CommandRunner (execFile + allowlist).
+- Toda ação que altera estado passa por withAudit.
+- Datas no banco: inteiro em milissegundos (epoch). Na API: string ISO 8601.
+
+## Banco
+- Drizzle. Migrations geradas por drizzle-kit generate e commitadas.
+- Proibido drizzle-kit push. Proibido editar migration já commitada.
+
+## apps/web
+- Next.js em static export. Proibido: API routes/route handlers, server actions, middleware.ts, busca de dados em server components, next/image otimizado.
+- Todo dado vem da API do server, via axios no cliente. Proibido `fetch`.

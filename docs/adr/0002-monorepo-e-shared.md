@@ -28,7 +28,7 @@ Monorepos com pacote compartilhado quebram quase sempre pelos mesmos motivos:
 | M5 | Versão única do zod | Mesma versão em todos os pacotes + `overrides` na raiz · verificado com `npm ls zod` |
 | M6 | Aliases | **Nenhum** alias entre pacotes · `@/` permitido somente dentro do `apps/web` |
 | M7 | Pureza do shared | Só zod, tipos, constantes e funções puras · roda no browser e no Node |
-| M8 | Ferramentas | Biome (lint + format) · Vitest · tsx (dev do server) · tsdown (build do server) · concurrently |
+| M8 | Ferramentas | ESLint (lint) + Prettier (format) · Vitest · tsx (dev do server) · tsdown (build do server) · concurrently |
 | M9 | Configuração | `node --env-file` (nativo) + validação com zod · sem dotenv |
 | M10 | Composição | Objeto `deps` criado no boot e passado aos módulos · sem container de DI |
 | M11 | Acesso ao SO | Somente via adaptadores com implementação `real` e `fake` (`OMNIS_MODE`) |
