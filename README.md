@@ -1,1 +1,1 @@
-# omnis-vps
+# Omnis — VPS

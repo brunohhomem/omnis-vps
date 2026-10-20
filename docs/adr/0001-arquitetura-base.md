@@ -1,6 +1,6 @@
 # ADR-001 — Arquitetura base do Omnis
 
-- **Status:** Proposto
+- **Status:** Aceito (2026-10-20)
 - **Data:** 2026-10-20
 - **Decisores:** Bruno
 
