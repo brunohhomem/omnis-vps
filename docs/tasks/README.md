@@ -8,8 +8,8 @@ Ordem de execução: **monorepo → backend e banco → frontend**.
 
 | ID | Task | Depende de | Status |
 |---|---|---|---|
-| T001 | [Estrutura do monorepo e tooling](T001-estrutura-monorepo.md) | — | ⬜ |
-| T002 | [Fundação do `packages/shared`](T002-fundacao-shared.md) | T001 | ⬜ |
+| T001 | [Estrutura do monorepo e tooling](T001-estrutura-monorepo.md) | — | ✅ |
+| T002 | [Fundação do `packages/shared`](T002-fundacao-shared.md) | T001 | ✅ |
 
 ## Fase 2 — Backend e banco
 
@@ -17,12 +17,12 @@ Ordem de execução: **monorepo → backend e banco → frontend**.
 
 | ID | Task | Depende de | Status |
 |---|---|---|---|
-| T003 | [Bootstrap do server (Fastify)](T003-bootstrap-server.md) | T002 | ⬜ |
-| T004 | [Banco SQLite + Drizzle + migrations](T004-banco-sqlite-drizzle.md) | T003 | ⬜ |
-| T005 | [Adaptadores e modo fake](T005-adaptadores-modo-fake.md) | T003 | ⬜ |
-| T006 | [Auditoria](T006-auditoria.md) | T004 | ⬜ |
-| T007 | [Autenticação e tokens](T007-autenticacao-tokens.md) | T006 | ⬜ |
-| T008 | [Endpoint MCP](T008-endpoint-mcp.md) | T005, T007 | ⬜ |
+| T003 | [Bootstrap do server (Fastify)](T003-bootstrap-server.md) | T002 | ✅ |
+| T004 | [Banco SQLite + Drizzle + migrations](T004-banco-sqlite-drizzle.md) | T003 | ✅ |
+| T005 | [Adaptadores e modo fake](T005-adaptadores-modo-fake.md) | T003 | ✅ |
+| T006 | [Auditoria](T006-auditoria.md) | T004 | ✅ |
+| T007 | [Autenticação e tokens](T007-autenticacao-tokens.md) | T006 | ✅ |
+| T008 | [Endpoint MCP](T008-endpoint-mcp.md) | T005, T007 | ✅ |
 
 ### 2b. Módulos (specs escritas após a fundação)
 
