@@ -153,10 +153,10 @@ Criar também `src/core/errors.ts` com a classe `AppError(code, message, statusC
 
 ## Critérios de aceite
 
-- [ ] Nenhum service importa `fastify`.
-- [ ] Todas as respostas de erro no formato do shared.
-- [ ] Bind não-loopback bloqueado em produção.
-- [ ] Shutdown gracioso funcionando (`Ctrl+C` encerra limpo).
+- [x] Nenhum service importa `fastify`.
+- [x] Todas as respostas de erro no formato do shared.
+- [x] Bind não-loopback bloqueado em produção.
+- [x] Shutdown gracioso funcionando (`Ctrl+C` encerra limpo).
 
 ## Fora de escopo
 
@@ -165,5 +165,21 @@ Banco, autenticação (todas as rotas ficam abertas até a T007), CORS de dev (T
 ## Registro de implementação
 
 - RSS medido em idle:
+  - Processo do `npm run start` (`node --env-file=.env dist/index.js`, `NODE_ENV=development`, com `pino-pretty`): `rssBytes` **68055040** (~64,9 MB) após ~16 s em idle, uma única chamada a `/api/health`. Abaixo de 80 MB.
+  - `npm run dev` (`tsx watch`) no mesmo endpoint: `rssBytes` 99872768 (~95,2 MB). É o watcher, não o processo que o PM2 sobe.
 - Desvios da spec e motivo:
+  - `pino@10.4.0` como dependência direta. O Fastify já depende dela (`^9.14.0 || ^10.1.0`, resolvida em 10.4.0). O logger nasce em `createDeps`, antes da instância, para o `AppDeps.logger` existir sem o service importar Fastify.
+  - `"version": "0.0.0"` em `apps/server/package.json`. `version.ts` lê esse campo e o pacote não tinha versão.
+  - Depois de `app.close()` bem-sucedido o processo chama `process.exit(0)`. O worker do `pino-pretty` segura o event loop, então o Ctrl+C não encerrava sozinho. O estouro do timeout de 10 s continua em `process.exit(1)`.
+  - `@fastify/static` com `wildcard: false`. O catch-all `/*` engolia rotas que não existem em `/api` e `/mcp`. Com `wildcard: false` só os arquivos do export viram rota; o `GET` sem arquivo cai no handler que serve `404.html` com status 404. O export não muda em runtime.
+  - `PORT` aceita inteiro de 1 a 65535. Fora isso, `loadConfig` falha.
+  - Boolean de ambiente só aceita `true`/`false` (e boolean já parseado). `"false"` vira `false`. `z.coerce.boolean()` não serve: qualquer string não vazia, inclusive `"false"`, vira `true`.
+  - Status HTTP sem código dedicado no shared (ex.: 405) mantém o status e usa `INTERNAL_ERROR`. Mapa explícito: 400 `VALIDATION_ERROR`, 401 `UNAUTHORIZED`, 403 `FORBIDDEN`, 404 `NOT_FOUND`, 409 `CONFLICT`, 429 `RATE_LIMITED`. `AppError` usa o próprio `code`/`statusCode`. 500 inesperado: `INTERNAL_ERROR`, mensagem genérica em produção, sem stack no corpo.
+  - `eslint.config.js` trata `*.cjs` como CommonJS (`module`, `__dirname`). Sem isso, `ecosystem.config.cjs` quebrava o `npm run lint`.
 - Problemas encontrados:
+  - `npm run dev` e `npm run start` sobem, e `GET /api/health` responde 200. O `--env-file=.env` entra: `/api/system/info` voltou `mode: "fake"`.
+  - Ctrl+C no console do processo encerra com código 0 e log `shutting down` / `signal: SIGINT`. No Windows, `process.kill(pid, 'SIGINT')` mata o processo sem rodar o handler; o teste usou `GenerateConsoleCtrlEvent`.
+  - `logger.flush()` no child logger do Fastify, com transport do `pino-pretty`, lança `Cannot read properties of undefined (reading 'Symbol(pino.stream)')`. O flush foi removido; o log de shutdown já tinha sido escrito antes do `exit`.
+  - npm instalou os peers `@fastify/swagger@9.9.2` e `openapi-types@12.1.3` por causa do `fastify-type-provider-zod@7.0.0`. Não estão no `package.json` do server e o código não importa esses pacotes.
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.
+  - O postinstall do `esbuild@0.28.2` foi bloqueado pelo npm. `tsx` e `tsdown` funcionaram.
