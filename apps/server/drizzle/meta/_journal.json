@@ -15,6 +15,13 @@
       "when": 1792523005012,
       "tag": "0001_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792535994832,
+      "tag": "0002_auth",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config';
 import { createAdapters } from '../../src/infra';
 import { createFakeSystemAdapter } from '../../src/infra/system/system.fake';
+import { TEST_SECRET_KEY } from '../helpers/secret';
 
 const REAL_REQUIRES_LINUX =
   'OMNIS_MODE=real exige Linux; use OMNIS_MODE=fake no desenvolvimento';
@@ -45,7 +46,10 @@ describe('fake system adapter', () => {
 
   it('rejects real mode outside Linux', () => {
     if (process.platform === 'linux') return;
-    const config = loadConfig({ OMNIS_MODE: 'real' });
+    const config = loadConfig({
+      OMNIS_MODE: 'real',
+      OMNIS_SECRET_KEY: TEST_SECRET_KEY,
+    });
     expect(() => createAdapters(config, { info() {} })).toThrow(
       REAL_REQUIRES_LINUX,
     );

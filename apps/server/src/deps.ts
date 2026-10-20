@@ -10,6 +10,10 @@ import {
   createAuditService,
   type AuditService,
 } from './modules/audit/audit.service';
+import {
+  createAuthService,
+  type AuthService,
+} from './modules/auth/auth.service';
 
 export type AppDeps = {
   config: Config;
@@ -18,7 +22,8 @@ export type AppDeps = {
   settings: SettingsService;
   adapters: Adapters;
   audit: AuditService;
-  // T007: auth · ...
+  auth: AuthService;
+  // T008: mcp · ...
 };
 
 export async function createDeps(config: Config): Promise<AppDeps> {
@@ -37,6 +42,7 @@ export async function createDeps(config: Config): Promise<AppDeps> {
     const adapters = createAdapters(config, logger);
     const audit = createAuditService({ db: opened.db, logger });
     audit.reconcileInterrupted();
+    const auth = createAuthService({ db: opened.db, config });
     return {
       config,
       logger,
@@ -44,6 +50,7 @@ export async function createDeps(config: Config): Promise<AppDeps> {
       settings: createSettingsService({ db: opened.db }),
       adapters,
       audit,
+      auth,
     };
   } catch (error) {
     opened.sqlite.close();

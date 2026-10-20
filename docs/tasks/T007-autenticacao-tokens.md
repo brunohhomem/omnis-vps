@@ -123,10 +123,10 @@ Gravar com `withAudit` ou `start`/`succeed`/`fail`: `auth.login` (sucesso e falh
 
 ## Critérios de aceite
 
-- [ ] Nenhuma rota fora da allowlist acessível sem credencial.
-- [ ] Segredo TOTP criptografado no banco; senhas, sessões e tokens só como hash.
-- [ ] Tokens não gerenciam tokens.
-- [ ] IP real considerado atrás do Tunnel.
+- [x] Nenhuma rota fora da allowlist acessível sem credencial.
+- [x] Segredo TOTP criptografado no banco; senhas, sessões e tokens só como hash.
+- [x] Tokens não gerenciam tokens.
+- [x] IP real considerado atrás do Tunnel.
 
 ## Fora de escopo
 
@@ -135,4 +135,17 @@ Tela de login (T021), OAuth para o conector do claude.ai (fase futura), recupera
 ## Registro de implementação
 
 - Desvios da spec e motivo:
+  - `users.totp_last_period` guarda o último período TOTP aceito. Sem essa coluna o mesmo código voltava a valer dentro da janela de ±1.
+  - `user:setup --reset` apaga sessões e revoga tokens além de substituir o usuário. Só existe um operador, e os tokens antigos autenticariam contra o usuário novo.
+  - O rate limit usa dois `preHandler` (5/min e 20/h). O plugin aceita uma janela por configuração. O teste cobre a 6ª tentativa no minuto; a janela da hora fica configurada.
+  - O hook ignora `request.is404`. O Fastify executa o `preHandler` da raiz também no 404, e sem isso uma URL desconhecida em `/api` virava 401. Rota registrada sem credencial continua 401.
+  - A lista de tokens é o array do schema, sem envelope.
+  - O ator do `auth.login` começa com `id: null` e `label` igual ao username tentado, porque o `withAudit` abre antes de saber se o login passa.
+  - O app autenticador físico não foi usado. O `user:setup` imprimiu a URI `otpauth://` e o código foi gerado com `otpauth`, o mesmo algoritmo do app. O login seguinte esperou o período seguinte, porque o código do setup já tinha sido consumido.
 - Problemas encontrados:
+  - `@fastify/rate-limit` lança o retorno de `errorResponseBuilder`. Um objeto simples caía no handler como 500. O builder devolve `AppError` `RATE_LIMITED`.
+  - `user:setup` aplicou `0002_auth` (`applied: 1`) e gravou backup, porque o banco local já tinha as migrations anteriores.
+  - `COOKIE_SECURE=false` ficou só no `.env` local, ignorado pelo git, para o `curl` em `http://127.0.0.1` reenviar o cookie. O default e o `.env.example` continuam `true`.
+  - Login `204`, `GET /api/me` devolveu a sessão `admin`, e um token `read` chamou `GET /api/system/info`.
+  - `typecheck`, `lint`, `db:check` e `test` passaram (51 testes no server).
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.

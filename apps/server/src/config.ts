@@ -63,8 +63,22 @@ export const ConfigSchema = z
           .map((mount) => mount.trim())
           .filter((mount) => mount.length > 0),
       ),
+    OMNIS_SECRET_KEY: z.string().min(1),
+    SESSION_TTL_HOURS: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().min(1).default(168),
+    ),
+    COOKIE_SECURE: EnvBooleanSchema.default(true),
+    TRUST_CLOUDFLARE: EnvBooleanSchema.default(false),
   })
   .superRefine((config, ctx) => {
+    if (Buffer.from(config.OMNIS_SECRET_KEY, 'base64').length !== 32) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OMNIS_SECRET_KEY'],
+        message: 'OMNIS_SECRET_KEY must be 32 bytes in base64',
+      });
+    }
     if (config.DISK_MOUNTS.length === 0) {
       ctx.addIssue({
         code: 'custom',

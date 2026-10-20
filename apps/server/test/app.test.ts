@@ -10,11 +10,13 @@ import {
 } from '@omnis/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { Secret, TOTP } from 'otpauth';
 import { buildApp } from '../src/app';
 import { loadConfig } from '../src/config';
 import { AppError } from '../src/core/errors';
-import { createDeps } from '../src/deps';
+import { createDeps, type AppDeps } from '../src/deps';
 import { version } from '../src/version';
+import { TEST_SECRET_KEY } from './helpers/secret';
 
 const dataDirs: string[] = [];
 
@@ -26,11 +28,29 @@ async function createApp(env: NodeJS.ProcessEnv = {}) {
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
     OMNIS_MODE: 'fake',
+    OMNIS_SECRET_KEY: TEST_SECRET_KEY,
     ...env,
     DATA_DIR: dataDir,
   });
   const deps = await createDeps(config);
-  return buildApp(deps);
+  return Object.assign(buildApp(deps), { deps });
+}
+
+async function sessionCookie(deps: AppDeps): Promise<string> {
+  const secret = new Secret({ size: 20 });
+  await deps.auth.setupUser({
+    username: 'operator',
+    password: 'correct-horse-battery',
+    totpSecret: secret.base32,
+  });
+  const { sessionId } = await deps.auth.login({
+    username: 'operator',
+    password: 'correct-horse-battery',
+    totp: TOTP.generate({ secret }),
+    ip: '127.0.0.1',
+    userAgent: 'vitest',
+  });
+  return `omnis_session=${sessionId}`;
 }
 
 describe('http', () => {
@@ -68,6 +88,7 @@ describe('http', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/system/info',
+      headers: { cookie: await sessionCookie(app.deps) },
     });
 
     expect(response.statusCode).toBe(200);
@@ -84,6 +105,7 @@ describe('http', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/system/snapshot',
+      headers: { cookie: await sessionCookie(app.deps) },
     });
 
     expect(response.statusCode).toBe(200);
@@ -96,7 +118,11 @@ describe('http', () => {
     const app = await createApp();
     apps.push(app);
 
-    const response = await app.inject({ method: 'GET', url: '/api/audit' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/audit',
+      headers: { cookie: await sessionCookie(app.deps) },
+    });
 
     expect(response.statusCode).toBe(200);
     expect(AuditListOutputSchema.parse(response.json())).toEqual({
@@ -136,6 +162,7 @@ describe('http', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/widgets',
+      headers: { cookie: await sessionCookie(app.deps) },
       payload: {},
     });
 
@@ -152,7 +179,11 @@ describe('http', () => {
       throw new AppError('CONFLICT', 'already exists', 409, { id: '1' });
     });
 
-    const response = await app.inject({ method: 'GET', url: '/api/conflict' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/conflict',
+      headers: { cookie: await sessionCookie(app.deps) },
+    });
 
     expect(response.statusCode).toBe(409);
     expect(ApiErrorSchema.parse(response.json())).toEqual({
@@ -171,7 +202,11 @@ describe('http', () => {
       throw new Error('boom-detail');
     });
 
-    const response = await app.inject({ method: 'GET', url: '/api/explode' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/explode',
+      headers: { cookie: await sessionCookie(app.deps) },
+    });
     const body = ApiErrorSchema.parse(response.json());
 
     expect(response.statusCode).toBe(500);
