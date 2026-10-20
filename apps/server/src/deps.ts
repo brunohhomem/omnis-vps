@@ -6,6 +6,10 @@ import type { Config } from './config';
 import { openDatabase, type AppDatabase } from './db/client';
 import { runMigrations } from './db/migrate';
 import { createAdapters, type Adapters } from './infra';
+import {
+  createAuditService,
+  type AuditService,
+} from './modules/audit/audit.service';
 
 export type AppDeps = {
   config: Config;
@@ -13,7 +17,8 @@ export type AppDeps = {
   db: AppDatabase;
   settings: SettingsService;
   adapters: Adapters;
-  // T006: audit · ...
+  audit: AuditService;
+  // T007: auth · ...
 };
 
 export async function createDeps(config: Config): Promise<AppDeps> {
@@ -30,12 +35,15 @@ export async function createDeps(config: Config): Promise<AppDeps> {
       logger,
     });
     const adapters = createAdapters(config, logger);
+    const audit = createAuditService({ db: opened.db, logger });
+    audit.reconcileInterrupted();
     return {
       config,
       logger,
       db: opened.db,
       settings: createSettingsService({ db: opened.db }),
       adapters,
+      audit,
     };
   } catch (error) {
     opened.sqlite.close();

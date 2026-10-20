@@ -97,9 +97,9 @@ O caso de `content` cobre a escrita de arquivos (T014): o log registra que o arq
 
 ## Critérios de aceite
 
-- [ ] Registro gravado antes da execução.
-- [ ] Reconciliação no boot.
-- [ ] Nenhum segredo nem conteúdo de arquivo em `params`.
+- [x] Registro gravado antes da execução.
+- [x] Reconciliação no boot.
+- [x] Nenhum segredo nem conteúdo de arquivo em `params`.
 
 ## Fora de escopo
 
@@ -108,4 +108,13 @@ Retenção automática (job na T009), tela de auditoria (T026).
 ## Registro de implementação
 
 - Desvios da spec e motivo:
+  - O cursor do `PaginationQuerySchema` é string. O `id` numérico trafega como string decimal, e `nextCursor` fica `null` na última página.
+  - Passada a profundidade 5, o valor vira `[MAX_DEPTH]`. Nada mais fundo entra no log.
+  - `purgeOlderThan` devolve quantas linhas apagou, comparando `started_at` com a data.
+  - `succeed` e `fail` com id inexistente lançam `NOT_FOUND`.
+  - Nenhuma rota atual altera estado, então nenhuma chama `withAudit` ainda. O ator anônimo fica em `ANONYMOUS_ACTOR` (`system` / `anonymous`) para as rotas usarem até a T007.
 - Problemas encontrados:
+  - O primeiro boot aplicou `0001_audit` (`applied: 1`) e fez backup, porque o banco já tinha a migration de `settings`.
+  - Com uma linha `started` inserida à mão, o boot seguinte logou `reconciled interrupted audit entries` com `count: 1`. A linha ficou `interrupted`, com `finished_at` preenchido. `GET /api/audit` devolveu esse item.
+  - `typecheck`, `lint`, `db:check` e `test` passaram (43 testes no server).
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.

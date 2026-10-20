@@ -6,6 +6,7 @@ import {
   HealthOutputSchema,
   SystemInfoOutputSchema,
   SystemSnapshotSchema,
+  AuditListOutputSchema,
 } from '@omnis/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -89,6 +90,19 @@ describe('http', () => {
     const body = SystemSnapshotSchema.parse(response.json());
     expect(body.disks[0]?.mount).toBe('/');
     expect(body.uptimeSec).toBeGreaterThan(0);
+  });
+
+  it('GET /api/audit returns an empty page', async () => {
+    const app = await createApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/audit' });
+
+    expect(response.statusCode).toBe(200);
+    expect(AuditListOutputSchema.parse(response.json())).toEqual({
+      items: [],
+      nextCursor: null,
+    });
   });
 
   it('returns ApiErrorSchema for an unknown route', async () => {
