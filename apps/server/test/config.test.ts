@@ -15,6 +15,18 @@ describe('loadConfig', () => {
     expect(config.DATA_DIR).toBe(path.resolve(process.cwd(), 'data'));
     expect(config.MIGRATIONS_DIR).toBe(path.resolve(process.cwd(), 'drizzle'));
     expect(config.DB_BACKUPS_KEEP).toBe(5);
+    expect(config.DISK_MOUNTS).toEqual(['/']);
+  });
+
+  it('splits DISK_MOUNTS and drops empty entries', () => {
+    expect(loadConfig({ DISK_MOUNTS: '/, /var' }).DISK_MOUNTS).toEqual([
+      '/',
+      '/var',
+    ]);
+  });
+
+  it('rejects a DISK_MOUNTS value with no mounts', () => {
+    expect(() => loadConfig({ DISK_MOUNTS: ' , ' })).toThrow(/DISK_MOUNTS/);
   });
 
   it('lists every invalid variable', () => {

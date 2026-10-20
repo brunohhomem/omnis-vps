@@ -5,6 +5,7 @@ import {
   ApiErrorSchema,
   HealthOutputSchema,
   SystemInfoOutputSchema,
+  SystemSnapshotSchema,
 } from '@omnis/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -23,6 +24,7 @@ async function createApp(env: NodeJS.ProcessEnv = {}) {
   const config = loadConfig({
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
+    OMNIS_MODE: 'fake',
     ...env,
     DATA_DIR: dataDir,
   });
@@ -72,6 +74,21 @@ describe('http', () => {
     expect(body.omnisVersion).toBe(version);
     expect(body.mode).toBe('fake');
     expect(body.nodeVersion).toBe(process.version);
+  });
+
+  it('GET /api/system/snapshot matches SystemSnapshotSchema', async () => {
+    const app = await createApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/system/snapshot',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = SystemSnapshotSchema.parse(response.json());
+    expect(body.disks[0]?.mount).toBe('/');
+    expect(body.uptimeSec).toBeGreaterThan(0);
   });
 
   it('returns ApiErrorSchema for an unknown route', async () => {

@@ -5,13 +5,15 @@ import { createSettingsService, type SettingsService } from './core/settings';
 import type { Config } from './config';
 import { openDatabase, type AppDatabase } from './db/client';
 import { runMigrations } from './db/migrate';
+import { createAdapters, type Adapters } from './infra';
 
 export type AppDeps = {
   config: Config;
   logger: FastifyBaseLogger;
   db: AppDatabase;
   settings: SettingsService;
-  // T005: adapters · T006: audit · ...
+  adapters: Adapters;
+  // T006: audit · ...
 };
 
 export async function createDeps(config: Config): Promise<AppDeps> {
@@ -27,17 +29,18 @@ export async function createDeps(config: Config): Promise<AppDeps> {
       keep: config.DB_BACKUPS_KEEP,
       logger,
     });
+    const adapters = createAdapters(config, logger);
+    return {
+      config,
+      logger,
+      db: opened.db,
+      settings: createSettingsService({ db: opened.db }),
+      adapters,
+    };
   } catch (error) {
     opened.sqlite.close();
     throw error;
   }
-
-  return {
-    config,
-    logger,
-    db: opened.db,
-    settings: createSettingsService({ db: opened.db }),
-  };
 }
 
 function createLogger(config: Config): FastifyBaseLogger {

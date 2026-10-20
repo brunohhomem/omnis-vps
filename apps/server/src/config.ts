@@ -55,8 +55,23 @@ export const ConfigSchema = z
       emptyToUndefined,
       z.coerce.number().int().min(0).default(5),
     ),
+    DISK_MOUNTS: z
+      .preprocess(emptyToUndefined, z.string().min(1).default('/'))
+      .transform((value) =>
+        value
+          .split(',')
+          .map((mount) => mount.trim())
+          .filter((mount) => mount.length > 0),
+      ),
   })
   .superRefine((config, ctx) => {
+    if (config.DISK_MOUNTS.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DISK_MOUNTS'],
+        message: 'DISK_MOUNTS must list at least one mount',
+      });
+    }
     if (config.NODE_ENV !== 'production' || config.ALLOW_PUBLIC_BIND) return;
     if (LOOPBACK_HOSTS.has(config.HOST)) return;
     ctx.addIssue({

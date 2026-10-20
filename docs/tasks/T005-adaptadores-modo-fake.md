@@ -135,9 +135,9 @@ Registro inicial em `commands.ts`: só `system.uptime` → `/usr/bin/uptime`, se
 
 ## Critérios de aceite
 
-- [ ] Nenhum arquivo fora de `src/infra/` lê `/proc` ou importa `node:child_process`.
-- [ ] Nenhuma dependência nova (sem `systeminformation`).
-- [ ] Fake com padrão diário determinístico.
+- [x] Nenhum arquivo fora de `src/infra/` lê `/proc` ou importa `node:child_process`.
+- [x] Nenhuma dependência nova (sem `systeminformation`).
+- [x] Fake com padrão diário determinístico.
 
 ## Fora de escopo
 
@@ -146,5 +146,17 @@ Adaptadores de PM2, Docker e journald (entram nas tasks dos módulos, seguindo e
 ## Registro de implementação
 
 - Comparação real × `free`/`df` (se testado em Linux):
+  - O WSL2 sobe (`Linux 6.18.33.2-microsoft-standard-WSL2`), mas não tem Node, então `OMNIS_MODE=real` e o `statfs` do adaptador não rodaram lá. O `df -B1 /` desse WSL era `/dev/sdf` com 1081101176832 bytes, 2376552448 usados e 1023732269056 disponíveis (1%).
+  - Os parsers, sobre um `/proc/meminfo` copiado do mesmo WSL logo depois do `free -b`, devolveram `totalBytes` **7198093312** e `swapTotalBytes` **2147483648** / `swapUsedBytes` **0**, iguais ao `free -b`. `availableBytes` foi 6153908224 contra 6135525376 do `free` (a leitura do `/proc` foi alguns segundos depois). `usedPct` 14,5 usa `MemAvailable`, não a coluna `used` do `free`.
+  - `loadavg` impresso: `0.77 0.29 0.13`. O arquivo copiado em seguida parseou `0.54 0.28 0.13` (o `m1` anda entre as leituras; `m5`/`m15` ficaram colados).
 - Desvios da spec e motivo:
+  - `createAdapters(config, logger)`. O runner precisa logar no pino que já existe no boot; a spec só passava `config`.
+  - `AppError` exige código, mensagem e status. Comando desconhecido, `/proc` ilegível e `statfs` que falha usam `ADAPTER_UNAVAILABLE` com HTTP 503. Argumento inválido usa `VALIDATION_ERROR` com 400.
+  - Disco: `freeBytes` é `bavail * bsize` (coluna Available do `df`). `usedPct` segue o `df`: usados / (usados + disponíveis), com usados = `(blocks - bfree) * bsize`.
+  - `guest` e `guest_nice` não entram de novo na soma da CPU; já estão em `user` e `nice`. A primeira leitura espera 500 ms e usa essa janela também para a taxa de rede. Delta negativo de contador vira 0.
+  - A curva fake usa a hora local. O pico é um cosseno centrado nas 21h, então 20h–22h fica no alto e a madrugada no vale. O disco cresce 200 MB/dia a partir de 2026-01-01 UTC, com teto de 90%.
+  - O helper dos testes HTTP sobe com `OMNIS_MODE=fake`. O default da config continua `real`; no Windows o modo real aborta o boot, e a suíte precisa subir.
 - Problemas encontrados:
+  - `GET /api/system/snapshot` com `OMNIS_MODE=fake` respondeu 200 e passou no `SystemSnapshotSchema` (8 GiB, disco de 100 GiB em `/`, iface `eth0`).
+  - `typecheck`, `lint` e `test` passaram (35 testes no server). O timeout do `execFile` foi exercido com um `node -e` que dorme: o processo é morto antes de 5 s.
+  - npm 12 avisa que Node `v22.20.0` está abaixo de `^22.22.2 || ^24.15.0 || >=26`. Os comandos rodaram.

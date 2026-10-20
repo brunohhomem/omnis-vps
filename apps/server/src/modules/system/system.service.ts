@@ -1,5 +1,9 @@
 import os from 'node:os';
-import type { HealthOutput, SystemInfoOutput } from '@omnis/shared';
+import type {
+  HealthOutput,
+  SystemInfoOutput,
+  SystemSnapshot,
+} from '@omnis/shared';
 import type { AppDeps } from '../../deps';
 import { version } from '../../version';
 
@@ -24,6 +28,9 @@ export function createSystemService(deps: AppDeps) {
         omnisVersion: version,
         mode: deps.config.OMNIS_MODE,
       };
+    },
+    getSnapshot(): Promise<SystemSnapshot> {
+      return deps.adapters.system.readSnapshot();
     },
   };
 }
