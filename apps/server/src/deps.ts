@@ -1,17 +1,42 @@
+import path from 'node:path';
 import type { FastifyBaseLogger } from 'fastify';
 import pino, { type LoggerOptions } from 'pino';
+import { createSettingsService, type SettingsService } from './core/settings';
 import type { Config } from './config';
+import { openDatabase, type AppDatabase } from './db/client';
+import { runMigrations } from './db/migrate';
 
 export type AppDeps = {
   config: Config;
   logger: FastifyBaseLogger;
-  // T004: db · T005: adapters · T006: audit · ...
+  db: AppDatabase;
+  settings: SettingsService;
+  // T005: adapters · T006: audit · ...
 };
 
-export function createDeps(config: Config): AppDeps {
+export async function createDeps(config: Config): Promise<AppDeps> {
+  const logger = createLogger(config);
+  const dbFilePath = path.join(config.DATA_DIR, 'omnis.db');
+  const opened = openDatabase(dbFilePath);
+  try {
+    await runMigrations({
+      sqlite: opened.sqlite,
+      db: opened.db,
+      dbFilePath,
+      migrationsDir: config.MIGRATIONS_DIR,
+      keep: config.DB_BACKUPS_KEEP,
+      logger,
+    });
+  } catch (error) {
+    opened.sqlite.close();
+    throw error;
+  }
+
   return {
     config,
-    logger: createLogger(config),
+    logger,
+    db: opened.db,
+    settings: createSettingsService({ db: opened.db }),
   };
 }
 

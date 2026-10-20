@@ -14,28 +14,38 @@ import { AppError } from '../src/core/errors';
 import { createDeps } from '../src/deps';
 import { version } from '../src/version';
 
-function createApp(env: NodeJS.ProcessEnv = {}) {
+const dataDirs: string[] = [];
+
+async function createApp(env: NodeJS.ProcessEnv = {}) {
+  const dataDir =
+    env.DATA_DIR ?? mkdtempSync(path.join(tmpdir(), 'omnis-data-'));
+  if (env.DATA_DIR === undefined) dataDirs.push(dataDir);
   const config = loadConfig({
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
     ...env,
+    DATA_DIR: dataDir,
   });
-  return buildApp(createDeps(config));
+  const deps = await createDeps(config);
+  return buildApp(deps);
 }
 
 describe('http', () => {
-  const apps: Array<ReturnType<typeof createApp>> = [];
+  const apps: Array<Awaited<ReturnType<typeof createApp>>> = [];
   const tempDirs: string[] = [];
 
   afterEach(async () => {
     await Promise.all(apps.splice(0).map((app) => app.close()));
+    for (const dir of dataDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
     for (const dir of tempDirs.splice(0)) {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
   it('GET /api/health matches HealthOutputSchema', async () => {
-    const app = createApp();
+    const app = await createApp();
     apps.push(app);
 
     const response = await app.inject({ method: 'GET', url: '/api/health' });
@@ -49,7 +59,7 @@ describe('http', () => {
   });
 
   it('GET /api/system/info matches SystemInfoOutputSchema', async () => {
-    const app = createApp({ OMNIS_MODE: 'fake' });
+    const app = await createApp({ OMNIS_MODE: 'fake' });
     apps.push(app);
 
     const response = await app.inject({
@@ -65,7 +75,7 @@ describe('http', () => {
   });
 
   it('returns ApiErrorSchema for an unknown route', async () => {
-    const app = createApp();
+    const app = await createApp();
     apps.push(app);
 
     const response = await app.inject({
@@ -78,7 +88,7 @@ describe('http', () => {
   });
 
   it('returns VALIDATION_ERROR for an invalid body', async () => {
-    const app = createApp();
+    const app = await createApp();
     apps.push(app);
     app.post(
       '/api/widgets',
@@ -105,7 +115,7 @@ describe('http', () => {
   });
 
   it('uses the AppError status and code', async () => {
-    const app = createApp();
+    const app = await createApp();
     apps.push(app);
     app.get('/api/conflict', async () => {
       throw new AppError('CONFLICT', 'already exists', 409, { id: '1' });
@@ -124,7 +134,7 @@ describe('http', () => {
   });
 
   it('hides unexpected error details in production', async () => {
-    const app = createApp({ NODE_ENV: 'production' });
+    const app = await createApp({ NODE_ENV: 'production' });
     apps.push(app);
     app.get('/api/explode', async () => {
       throw new Error('boom-detail');
@@ -146,7 +156,7 @@ describe('http', () => {
     writeFileSync(path.join(root, 'index.html'), '<html>home</html>');
     writeFileSync(path.join(root, '404.html'), '<html>missing</html>');
 
-    const app = createApp({ WEB_DIST_DIR: root });
+    const app = await createApp({ WEB_DIST_DIR: root });
     apps.push(app);
 
     const home = await app.inject({ method: 'GET', url: '/' });

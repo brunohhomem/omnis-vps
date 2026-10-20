@@ -6,7 +6,11 @@ import { version } from './version';
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 const config = loadConfig();
-const deps = createDeps(config);
+const deps = await createDeps(config).catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`failed to start: ${message}\n`);
+  process.exit(1);
+});
 const app = buildApp(deps);
 
 let shuttingDown = false;

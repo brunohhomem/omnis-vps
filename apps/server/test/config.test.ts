@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config';
 
@@ -11,6 +12,9 @@ describe('loadConfig', () => {
     expect(config.LOG_LEVEL).toBe('info');
     expect(config.OMNIS_MODE).toBe('real');
     expect(config.WEB_DIST_DIR).toBeUndefined();
+    expect(config.DATA_DIR).toBe(path.resolve(process.cwd(), 'data'));
+    expect(config.MIGRATIONS_DIR).toBe(path.resolve(process.cwd(), 'drizzle'));
+    expect(config.DB_BACKUPS_KEEP).toBe(5);
   });
 
   it('lists every invalid variable', () => {

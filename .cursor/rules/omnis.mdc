@@ -34,6 +34,10 @@ alwaysApply: true
 ## Banco
 - Drizzle. Migrations geradas por drizzle-kit generate e commitadas.
 - Proibido drizzle-kit push. Proibido editar migration já commitada.
+- Nomes de tabela e coluna em snake_case.
+- Datas como integer em epoch ms.
+- JSON como text, validado com zod na leitura.
+- Toda tabela de log/série temporal tem índice na coluna de tempo.
 
 ## apps/web
 - Next.js em static export. Proibido: API routes/route handlers, server actions, middleware.ts, busca de dados em server components, next/image otimizado.

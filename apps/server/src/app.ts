@@ -16,6 +16,9 @@ export function buildApp(deps: AppDeps) {
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  app.addHook('onClose', async () => {
+    deps.db.$client.close();
+  });
   registerErrorHandler(app, deps);
 
   void app.register(systemModule, { prefix: '/api', deps });

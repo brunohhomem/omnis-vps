@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { OmnisModeSchema } from '@omnis/shared';
 import { z } from 'zod';
 
@@ -44,6 +45,16 @@ export const ConfigSchema = z
     LOG_LEVEL: z.preprocess(emptyToUndefined, PinoLevelSchema.default('info')),
     OMNIS_MODE: z.preprocess(emptyToUndefined, OmnisModeSchema.default('real')),
     WEB_DIST_DIR: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    DATA_DIR: z
+      .preprocess(emptyToUndefined, z.string().min(1).default('./data'))
+      .transform((value) => path.resolve(process.cwd(), value)),
+    MIGRATIONS_DIR: z
+      .preprocess(emptyToUndefined, z.string().min(1).default('./drizzle'))
+      .transform((value) => path.resolve(process.cwd(), value)),
+    DB_BACKUPS_KEEP: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().min(0).default(5),
+    ),
   })
   .superRefine((config, ctx) => {
     if (config.NODE_ENV !== 'production' || config.ALLOW_PUBLIC_BIND) return;
