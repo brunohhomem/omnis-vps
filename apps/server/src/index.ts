@@ -1,4 +1,10 @@
-import { SHARED_SMOKE, SmokeSchema } from '@omnis/shared';
+import { HealthOutputSchema } from '@omnis/shared';
 
-const result = SmokeSchema.parse({ message: SHARED_SMOKE });
-console.log(result);
+const health = HealthOutputSchema.parse({
+  status: 'ok',
+  version: '0.0.0',
+  uptimeSec: 0,
+  rssBytes: 0,
+});
+
+console.log(health);

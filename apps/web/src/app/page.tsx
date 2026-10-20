@@ -1,5 +1,5 @@
-import { SHARED_SMOKE } from '@omnis/shared';
+import { ScopeSchema } from '@omnis/shared';
 
 export default function Page() {
-  return <main>{SHARED_SMOKE}</main>;
+  return <main>{ScopeSchema.options.join(', ')}</main>;
 }

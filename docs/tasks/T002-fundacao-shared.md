@@ -97,10 +97,10 @@ Apagar `SHARED_SMOKE` e `SmokeSchema`. Atualizar o `apps/server/src/index.ts` e 
 
 ## Critérios de aceite
 
-- [ ] Estrutura e convenções documentadas no `packages/shared/README.md`.
-- [ ] Nenhum tipo escrito à mão que duplique um schema.
-- [ ] Shared sem dependências além de `zod`.
-- [ ] Testes passando.
+- [x] Estrutura e convenções documentadas no `packages/shared/README.md`.
+- [x] Nenhum tipo escrito à mão que duplique um schema.
+- [x] Shared sem dependências além de `zod`.
+- [x] Testes passando.
 
 ## Fora de escopo
 
@@ -108,5 +108,9 @@ Schemas de módulos que ainda não existem (audit, auth etc. entram nas suas tas
 
 ## Registro de implementação
 
-- Desvios da spec e motivo:
-- Problemas encontrados:
+- Desvios da spec e motivo: nenhum.
+- Problemas encontrados: nenhum. O aviso do npm sobre Node `v22.20.0` (já registrado na T001) continua, e não impediu os comandos.
+- Notas:
+  - `IsoDateTimeSchema` é `z.iso.datetime({ offset: true })`: aceita `Z` e offset numérico (`+00:00`), e rejeita data-hora sem fuso. O default do zod 4 só aceita `Z`.
+  - A página do web junta `ScopeSchema.options` com vírgula (`read, ops, admin`).
+  - O teste de paginação também cobre a coerção de `limit` string, além do default e do máximo.
